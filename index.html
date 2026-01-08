@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring Pupuk Otomatis - Final Fix</title>
+    <style>
+        /* Menggunakan font sistem yang bersih dan seragam */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background-color: #0f172a; 
+            color: #f8fafc; 
+            margin: 0; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
+
+        h1 { 
+            color: #38bdf8; 
+            text-transform: uppercase; 
+            letter-spacing: 2px; 
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        /* Layout Grid agar 4 kotak berjejer rapi secara horizontal */
+        .grid-container { 
+            display: grid; 
+            grid-template-columns: repeat(4, 1fr); 
+            gap: 20px; 
+            width: 100%; 
+            max-width: 1100px; 
+            margin-bottom: 40px;
+        }
+
+        .card { 
+            background: #1e293b; 
+            padding: 25px 15px; 
+            border-radius: 15px; 
+            text-align: center; 
+            border-bottom: 4px solid #334155; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .card h3 { color: #94a3b8; font-size: 0.85rem; margin-top: 0; margin-bottom: 10px; }
+        
+        /* Font Utama Dashboard */
+        .value { font-size: 2.2rem; font-weight: bold; }
+
+        /* Pewarnaan Font Khusus sesuai permintaan */
+        #val1, .p1-text { color: #cc0000; font-weight: 850;} /* Pompa 1: Merah */
+        #val2, .p2-text { color: #098348; font-weight: 850;} /* Pompa 2: Hijau */
+        #val3, .p3-text { color: #3586f3; font-weight: 850;} /* Pompa 3: Biru */
+        #val4, .p4-text { color: #cc4e00; font-weight: 850;} /* Pompa 4: Oranye */
+
+        /* Tabel Log */
+        .log-section { 
+            width: 100%; 
+            max-width: 1100px; 
+            background: #1e293b; 
+            border-radius: 15px; 
+            padding: 25px; 
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { color: #38bdf8; padding: 15px; border-bottom: 2px solid #334155; text-align: left; font-size: 0.9rem; }
+        td { padding: 12px 15px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
+        
+        .time-text { color: #94a3b8; }
+        #update-status { font-size: 0.8rem; color: #64748b; margin-top: 15px; text-align: right; }
+
+        /* Responsif untuk Tablet & HP */
+        @media (max-width: 900px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 500px) { .grid-container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+    <h1>Monitoring Pupuk Otomatis</h1>
+    
+    <div class="grid-container">
+        <div class="card"><h3>PUMP 1</h3><div class="value" id="val1">--</div></div>
+        <div class="card"><h3>PUMP 2</h3><div class="value" id="val2">--</div></div>
+        <div class="card"><h3>PUMP 3</h3><div class="value" id="val3">--</div></div>
+        <div class="card"><h3>PUMP 4</h3><div class="value" id="val4">--</div></div>
+    </div>
+
+    <div class="log-section">
+        <h2 style="color: #4ade80; font-size: 1.2rem; margin: 0;">History Log Data (10 Data Terakhir)</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Waktu Update</th>
+                    <th>Pompa 1</th>
+                    <th>Pompa 2</th>
+                    <th>Pompa 3</th>
+                    <th>Pompa 4</th>
+                </tr>
+            </thead>
+            <tbody id="log-table-body">
+                </tbody>
+        </table>
+        <div id="update-status">Menghubungkan ke ThingSpeak...</div>
+    </div>
+
+    <script>
+        const channelID = '3221606'; 
+        const readKey = 'TG905M2GZV7OLYYO'; // Masukkan Read API Key Anda di sini
+
+        async function updateDashboard() {
+            const url = `https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readKey}&results=10`;
+            
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const feeds = data.feeds;
+
+                // Ambil data terbaru untuk kartu
+                const lastEntry = feeds[feeds.length - 1];
+                
+                // Update Angka Dashboard Utama
+                document.getElementById('val1').innerText = lastEntry.field1 ? Math.round(lastEntry.field1) + " mL" : "0 mL";
+                document.getElementById('val2').innerText = lastEntry.field2 ? Math.round(lastEntry.field2) + " mL" : "0 mL";
+                document.getElementById('val3').innerText = lastEntry.field3 ? Math.round(lastEntry.field3) + " mL" : "0 mL";
+                document.getElementById('val4').innerText = lastEntry.field4 ? Math.round(lastEntry.field4) + " mL" : "0 mL";
+
+                // Update Tabel Log
+                const tableBody = document.getElementById('log-table-body');
+                tableBody.innerHTML = ""; 
+
+                const history = [...feeds].reverse();
+                history.forEach(feed => {
+                    const row = `
+                        <tr>
+                            <td class="time-text">${new Date(feed.created_at).toLocaleString('id-ID')}</td>
+                            <td class="p1-text">${feed.field1 ? Math.round(feed.field1) + " mL" : "0 mL"}</td>
+                            <td class="p2-text">${feed.field2 ? Math.round(feed.field2) + " mL" : "0 mL"}</td>
+                            <td class="p3-text">${feed.field3 ? Math.round(feed.field3) + " mL" : "0 mL"}</td>
+                            <td class="p4-text">${feed.field4 ? Math.round(feed.field4) + " mL" : "0 mL"}</td>
+                        </tr>
+                    `;
+                    tableBody.innerHTML += row;
+                });
+
+                document.getElementById('update-status').innerText = "Terakhir diperbarui: " + new Date().toLocaleTimeString('id-ID');
+
+            } catch (error) {
+                document.getElementById('update-status').innerText = "Gagal memuat data!";
+            }
+        }
+
+        setInterval(updateDashboard, 15000);
+        updateDashboard();
+    </script>
+</body>
+</html>
