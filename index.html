@@ -3,78 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitoring Pupuk Otomatis - Final Fix</title>
+    <title>Monitoring Pupuk</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <style>
-        /* Menggunakan font sistem yang bersih dan seragam */
-        body { 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            background-color: #0f172a; 
-            color: #f8fafc; 
-            margin: 0; 
-            padding: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-        }
-
-        h1 { 
-            color: #38bdf8; 
-            text-transform: uppercase; 
-            letter-spacing: 2px; 
-            margin-bottom: 30px;
-            text-align: center;
-        }
-
-        /* Layout Grid agar 4 kotak berjejer rapi secara horizontal */
-        .grid-container { 
-            display: grid; 
-            grid-template-columns: repeat(4, 1fr); 
-            gap: 20px; 
-            width: 100%; 
-            max-width: 1100px; 
-            margin-bottom: 40px;
-        }
-
-        .card { 
-            background: #1e293b; 
-            padding: 25px 15px; 
-            border-radius: 15px; 
-            text-align: center; 
-            border-bottom: 4px solid #334155; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-
-        .card h3 { color: #94a3b8; font-size: 0.85rem; margin-top: 0; margin-bottom: 10px; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        h1 { color: #38bdf8; text-transform: uppercase; letter-spacing: 2px; text-align: center; }
         
-        /* Font Utama Dashboard */
-        .value { font-size: 2.2rem; font-weight: bold; }
-
-        /* Pewarnaan Font Khusus sesuai permintaan */
-        #val1, .p1-text { color: #cc0000; font-weight: 850;} /* Pompa 1: Merah */
-        #val2, .p2-text { color: #098348; font-weight: 850;} /* Pompa 2: Hijau */
-        #val3, .p3-text { color: #3586f3; font-weight: 850;} /* Pompa 3: Biru */
-        #val4, .p4-text { color: #cc4e00; font-weight: 850;} /* Pompa 4: Oranye */
-
-        /* Tabel Log */
-        .log-section { 
-            width: 100%; 
-            max-width: 1100px; 
-            background: #1e293b; 
-            border-radius: 15px; 
-            padding: 25px; 
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-        }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th { color: #38bdf8; padding: 15px; border-bottom: 2px solid #334155; text-align: left; font-size: 0.9rem; }
-        td { padding: 12px 15px; border-bottom: 1px solid #334155; font-size: 0.9rem; }
+        .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; width: 100%; max-width: 1100px; margin-bottom: 30px; }
+        .card { background: #1e293b; padding: 20px; border-radius: 12px; text-align: center; border-bottom: 4px solid #334155; }
+        /* Menggunakan tabular-nums agar angka tidak bergeser saat countdown */
+        .value { font-size: 1.8rem; font-weight: bold; font-variant-numeric: tabular-nums; }
         
-        .time-text { color: #94a3b8; }
-        #update-status { font-size: 0.8rem; color: #64748b; margin-top: 15px; text-align: right; }
+        #val1, .p1-text { color: #f87171; } #val2, .p2-text { color: #4ade80; }
+        #val3, .p3-text { color: #60a5fa; } #val4, .p4-text { color: #fb923c; }
 
-        /* Responsif untuk Tablet & HP */
-        @media (max-width: 900px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
-        @media (max-width: 500px) { .grid-container { grid-template-columns: 1fr; } }
+        .panel { width: 100%; max-width: 1100px; background: #1e293b; border-radius: 15px; padding: 25px; margin-bottom: 30px; box-sizing: border-box; }
+        
+        .controls-container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #334155; }
+        .checklist-group { display: flex; gap: 15px; flex-wrap: wrap; }
+        .check-item { display: flex; align-items: center; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
+        .check-item input { margin-right: 8px; cursor: pointer; width: 16px; height: 16px; }
+        
+        .download-btn { background: #059669; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
+        .download-btn:hover { background: #10b981; transform: translateY(-2px); }
+
+        table { width: 100%; border-collapse: collapse; }
+        th { color: #38bdf8; padding: 12px; border-bottom: 2px solid #334155; text-align: left; }
+        td { padding: 10px; border-bottom: 1px solid #334155; font-size: 0.85rem; }
+        
+        @media (max-width: 768px) { .grid-container { grid-template-columns: repeat(2, 1fr); } .controls-container { flex-direction: column; align-items: flex-start; } }
     </style>
 </head>
 <body>
@@ -82,78 +40,182 @@
     <h1>Monitoring Pupuk Otomatis</h1>
     
     <div class="grid-container">
-        <div class="card"><h3>PUMP 1</h3><div class="value" id="val1">--</div></div>
-        <div class="card"><h3>PUMP 2</h3><div class="value" id="val2">--</div></div>
-        <div class="card"><h3>PUMP 3</h3><div class="value" id="val3">--</div></div>
-        <div class="card"><h3>PUMP 4</h3><div class="value" id="val4">--</div></div>
+        <div class="card"><h3>PUMP 1</h3><div class="value" id="val1">0 mL</div></div>
+        <div class="card"><h3>PUMP 2</h3><div class="value" id="val2">0 mL</div></div>
+        <div class="card"><h3>PUMP 3</h3><div class="value" id="val3">0 mL</div></div>
+        <div class="card"><h3>PUMP 4</h3><div class="value" id="val4">0 mL</div></div>
     </div>
 
-    <div class="log-section">
-        <h2 style="color: #4ade80; font-size: 1.2rem; margin: 0;">History Log Data (10 Data Terakhir)</h2>
+    <div class="panel">
+        <div class="controls-container">
+            <div class="checklist-group">
+                <label class="check-item" style="color: #f87171;"><input type="checkbox" checked onchange="toggleDataset(0, this)"> Pump 1</label>
+                <label class="check-item" style="color: #4ade80;"><input type="checkbox" checked onchange="toggleDataset(1, this)"> Pump 2</label>
+                <label class="check-item" style="color: #60a5fa;"><input type="checkbox" checked onchange="toggleDataset(2, this)"> Pump 3</label>
+                <label class="check-item" style="color: #fb923c;"><input type="checkbox" checked onchange="toggleDataset(3, this)"> Pump 4</label>
+            </div>
+            <button class="download-btn" onclick="downloadExcel()">📊 Download Rekapan Excel</button>
+        </div>
+        <canvas id="pumpChart" height="100"></canvas>
+    </div>
+
+    <div class="panel">
+        <h2 style="color: #4ade80; font-size: 1.1rem; margin-top: 0;">History Log Data (Hari Ini)</h2>
         <table>
             <thead>
                 <tr>
-                    <th>Last Updated</th>
-                    <th>PUMP 1</th>
-                    <th>PUMP 2</th>
-                    <th>PUMP 3</th>
-                    <th>PUMP 4</th>
+                    <th>Waktu</th>
+                    <th>P1 (mL)</th>
+                    <th>P2 (mL)</th>
+                    <th>P3 (mL)</th>
+                    <th>P4 (mL)</th>
                 </tr>
             </thead>
-            <tbody id="log-table-body">
-                </tbody>
+            <tbody id="log-table-body"></tbody>
         </table>
-        <div id="update-status">Menghubungkan ke ThingSpeak...</div>
+        <div id="update-status" style="text-align: right; font-size: 0.7rem; color: #64748b; margin-top: 10px;">Menghubungkan...</div>
     </div>
 
     <script>
-        const channelID = '3221606'; 
-        const readKey = 'TG905M2GZV7OLYYO'; // Masukkan Read API Key Anda di sini
+        const channelID = '3221606';
+        const readKey = 'TG905M2GZV7OLYYO';
+        let pumpChart;
+        let lastTimestamp = "";
 
-        async function updateDashboard() {
-            const url = `https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readKey}&results=10`;
-            
-            try {
-                const response = await fetch(url);
-                const data = await response.json();
-                const feeds = data.feeds;
+        // Data Kalibrasi berdasarkan Sketch Arduino: detik per 100mL
+        const calibrationData = [81.0, 81.0, 79.0, 80.0]; 
+        let countdownIntervals = [null, null, null, null];
+        let currentDisplayValues = [0, 0, 0, 0];
 
-                // Ambil data terbaru untuk kartu
-                const lastEntry = feeds[feeds.length - 1];
-                
-                // Update Angka Dashboard Utama
-                document.getElementById('val1').innerText = lastEntry.field1 ? Math.round(lastEntry.field1) + " mL" : "0 mL";
-                document.getElementById('val2').innerText = lastEntry.field2 ? Math.round(lastEntry.field2) + " mL" : "0 mL";
-                document.getElementById('val3').innerText = lastEntry.field3 ? Math.round(lastEntry.field3) + " mL" : "0 mL";
-                document.getElementById('val4').innerText = lastEntry.field4 ? Math.round(lastEntry.field4) + " mL" : "0 mL";
-
-                // Update Tabel Log
-                const tableBody = document.getElementById('log-table-body');
-                tableBody.innerHTML = ""; 
-
-                const history = [...feeds].reverse();
-                history.forEach(feed => {
-                    const row = `
-                        <tr>
-                            <td class="time-text">${new Date(feed.created_at).toLocaleString('id-ID')}</td>
-                            <td class="p1-text">${feed.field1 ? Math.round(feed.field1) + " mL" : "0 mL"}</td>
-                            <td class="p2-text">${feed.field2 ? Math.round(feed.field2) + " mL" : "0 mL"}</td>
-                            <td class="p3-text">${feed.field3 ? Math.round(feed.field3) + " mL" : "0 mL"}</td>
-                            <td class="p4-text">${feed.field4 ? Math.round(feed.field4) + " mL" : "0 mL"}</td>
-                        </tr>
-                    `;
-                    tableBody.innerHTML += row;
-                });
-
-                document.getElementById('update-status').innerText = "Terakhir diperbarui: " + new Date().toLocaleTimeString('id-ID');
-
-            } catch (error) {
-                document.getElementById('update-status').innerText = "Gagal memuat data!";
-            }
+        function initChart() {
+            const ctx = document.getElementById('pumpChart').getContext('2d');
+            pumpChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'Pump 1', borderColor: '#f87171', data: [], tension: 0.3, spanGaps: true, hidden: false },
+                        { label: 'Pump 2', borderColor: '#4ade80', data: [], tension: 0.3, spanGaps: true, hidden: false },
+                        { label: 'Pump 3', borderColor: '#60a5fa', data: [], tension: 0.3, spanGaps: true, hidden: false },
+                        { label: 'Pump 4', borderColor: '#fb923c', data: [], tension: 0.3, spanGaps: true, hidden: false }
+                    ]
+                },
+                options: { 
+                    responsive: true, 
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { ticks: { color: '#64748b' }, grid: { display: false } },
+                        y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } }
+                    }
+                }
+            });
         }
 
-        setInterval(updateDashboard, 15000);
-        updateDashboard();
+        function toggleDataset(index, checkbox) {
+            pumpChart.setDatasetVisibility(index, checkbox.checked);
+            pumpChart.update();
+        }
+
+        async function fetchData() {
+            try {
+                const response = await fetch(`https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readKey}&results=800`);
+                const data = await response.json();
+                updateUI(data.feeds);
+            } catch (e) { document.getElementById('update-status').innerText = "Koneksi Gagal!"; }
+        }
+
+        function updateUI(feeds) {
+            if (!feeds || feeds.length === 0) return;
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            const todayFeeds = feeds.filter(f => f.created_at.startsWith(todayStr));
+
+            if (todayFeeds.length === 0) return;
+
+            const lastEntry = todayFeeds[todayFeeds.length - 1];
+
+            // --- LOGIKA COUNTDOWN DENGAN KOMPENSASI LATENSI ---
+            if (lastEntry.created_at !== lastTimestamp) {
+                lastTimestamp = lastEntry.created_at;
+
+                // Hitung selisih waktu antara server (ThingSpeak) dan client (Web)
+                const serverTime = new Date(lastEntry.created_at).getTime();
+                const clientTime = new Date().getTime();
+                const latencyMs = Math.max(0, clientTime - serverTime);
+
+                for (let i = 0; i < 4; i++) {
+                    const targetVal = Math.round(lastEntry[`field${i+1}`] || 0);
+                    const display = document.getElementById(`val${i+1}`);
+                    const msPerMl = (calibrationData[i] * 1000) / 100;
+
+                    clearInterval(countdownIntervals[i]);
+
+                    if (targetVal > 0) {
+                        // Menyesuaikan angka awal berdasarkan waktu yang sudah lewat selama pengiriman data
+                        const volumeLoss = Math.floor(latencyMs / msPerMl);
+                        currentDisplayValues[i] = Math.max(0, targetVal - volumeLoss);
+                        
+                        display.innerText = currentDisplayValues[i] + " mL";
+
+                        countdownIntervals[i] = setInterval(() => {
+                            if (currentDisplayValues[i] > 0) {
+                                currentDisplayValues[i] -= 1;
+                                display.innerText = currentDisplayValues[i] + " mL";
+                            } else {
+                                display.innerText = "0 mL";
+                                clearInterval(countdownIntervals[i]);
+                            }
+                        }, msPerMl);
+                    } else {
+                        display.innerText = "0 mL";
+                    }
+                }
+            }
+
+            // --- TAMPILAN GRAFIK & TABEL (TIDAK BERUBAH) ---
+            pumpChart.data.labels = todayFeeds.map(f => new Date(f.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}));
+            for(let i=0; i<4; i++) { pumpChart.data.datasets[i].data = todayFeeds.map(f => f[`field${i+1}`]); }
+            pumpChart.update('none');
+
+            const tableBody = document.getElementById('log-table-body');
+            tableBody.innerHTML = "";
+            [...todayFeeds].reverse().slice(0, 10).forEach(f => {
+                tableBody.innerHTML += `<tr>
+                    <td>${new Date(f.created_at).toLocaleString('id-ID')}</td>
+                    <td class="p1-text">${Math.round(f.field1 || 0)} mL</td>
+                    <td class="p2-text">${Math.round(f.field2 || 0)} mL</td>
+                    <td class="p3-text">${Math.round(f.field3 || 0)} mL</td>
+                    <td class="p4-text">${Math.round(f.field4 || 0)} mL</td>
+                </tr>`;
+            });
+            document.getElementById('update-status').innerText = "Terakhir diperbarui: " + new Date().toLocaleTimeString('id-ID');
+        }
+
+        async function downloadExcel() {
+            const btn = document.querySelector('.download-btn');
+            btn.innerText = "⏳ Menyiapkan...";
+            const fetchS = async (p) => {
+                const r = await fetch(`https://api.thingspeak.com/channels/${channelID}/feeds.json?api_key=${readKey}${p}`);
+                const d = await r.json();
+                return d.feeds.map(f => ({
+                    'Waktu': new Date(f.created_at).toLocaleString('id-ID'),
+                    'PUMP 1 (mL)': Math.round(f.field1 || 0), 'PUMP 2 (mL)': Math.round(f.field2 || 0),
+                    'PUMP 3 (mL)': Math.round(f.field3 || 0), 'PUMP 4 (mL)': Math.round(f.field4 || 0)
+                }));
+            };
+            try {
+                const [dW, dM, dY] = await Promise.all([fetchS('&days=7'), fetchS('&days=30'), fetchS('&results=8000')]);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dW), "1 Minggu");
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dM), "1 Bulan");
+                XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(dY), "1 Tahun");
+                XLSX.writeFile(wb, `Laporan_Pupuk_Otomatis.xlsx`);
+                btn.innerText = "📊 Download Rekapan Excel";
+            } catch (e) { btn.innerText = "📊 Download Rekapan Excel"; }
+        }
+
+        initChart();
+        fetchData();
+        setInterval(fetchData, 15000); // Sinkronisasi cloud setiap 15 detik
     </script>
 </body>
 </html>
