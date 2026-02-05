@@ -4,15 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Monitoring Pupuk</title>
+    
+    <link rel="icon" type="image/png" href="LOGO Monitoring PUPUK.png">
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
     <style>
+        /* --- STYLE ANIMASI LOGO (PRELOADER) --- */
+        #loader-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #0b1522;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out, visibility 0.5s;
+        }
+
+        .canvas { width: 450px; height: auto; filter: drop-shadow(0 0 20px rgba(0,0,0,0.5)); }
+        .leaf-shape { fill: url(#lushGradient); stroke: rgba(255,255,255,0.1); stroke-width: 0.5; }
+        .leaf-vein { fill: none; stroke: rgba(255, 255, 255, 0.15); stroke-width: 1; stroke-linecap: round; }
+        .drop { fill: #7cfc00; opacity: 0; animation: drip-down 3s infinite cubic-bezier(0.5, 0, 0.5, 1); }
+        .d1 { animation-delay: 0s; } .d2 { animation-delay: 1s; }
+
+        @keyframes drip-down {
+            0% { transform: translateY(-40px); opacity: 0; }
+            20% { opacity: 0.8; }
+            100% { transform: translateY(80px); opacity: 0; }
+        }
+
+        .line-flow { fill: none; stroke-width: 3; stroke-linecap: round; stroke-dasharray: 150; stroke-dashoffset: 150; animation: flow-move 4s infinite linear; }
+        .c-blue { stroke: #00f2ff; } .c-orange { stroke: #ff9d00; } .c-green { stroke: #39ff14; }
+
+        @keyframes flow-move { 0% { stroke-dashoffset: 150; } 100% { stroke-dashoffset: -150; } }
+
+        .node-point { animation: glow-pulse 1.5s infinite alternate; }
+        @keyframes glow-pulse { from { filter: blur(1px); opacity: 0.6; } to { filter: blur(3px); opacity: 1; } }
+
+        .text-main { fill: #ffffff; font-size: 38px; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; }
+        .text-sub { fill: #d1d1d1; font-size: 20px; letter-spacing: 10px; font-weight: 300; }
+
+        /* --- STYLE DASHBOARD --- */
         body { font-family: 'Segoe UI', sans-serif; background-color: #0f172a; color: #f8fafc; margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        h1 { color: #38bdf8; text-transform: uppercase; letter-spacing: 2px; text-align: center; }
+        h1 { color: #38bdf8; text-transform: uppercase; letter-spacing: 2px; text-align: center; margin-bottom: 30px; }
         
         .grid-container { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; width: 100%; max-width: 1100px; margin-bottom: 30px; }
         .card { background: #1e293b; padding: 20px; border-radius: 12px; text-align: center; border-bottom: 4px solid #334155; }
-        /* Menggunakan tabular-nums agar angka tidak bergeser saat countdown */
         .value { font-size: 1.8rem; font-weight: bold; font-variant-numeric: tabular-nums; }
         
         #val1, .p1-text { color: #f87171; } #val2, .p2-text { color: #4ade80; }
@@ -20,10 +61,13 @@
 
         .panel { width: 100%; max-width: 1100px; background: #1e293b; border-radius: 15px; padding: 25px; margin-bottom: 30px; box-sizing: border-box; }
         
+        /* Judul Panel */
+        .panel-title { color: #4ade80; font-size: 1.1rem; margin-top: 0; margin-bottom: 20px; text-transform: none; font-weight: 600; }
+
         .controls-container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 20px; margin-bottom: 20px; padding-bottom: 15px; border-bottom: 1px solid #334155; }
         .checklist-group { display: flex; gap: 15px; flex-wrap: wrap; }
-        .check-item { display: flex; align-items: center; cursor: pointer; font-weight: 600; font-size: 0.9rem; transition: 0.2s; }
-        .check-item input { margin-right: 8px; cursor: pointer; width: 16px; height: 16px; }
+        .check-item { display: flex; align-items: center; cursor: pointer; font-weight: 600; font-size: 0.9rem; }
+        .check-item input { margin-right: 8px; width: 16px; height: 16px; }
         
         .download-btn { background: #059669; color: white; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.3s; }
         .download-btn:hover { background: #10b981; transform: translateY(-2px); }
@@ -32,10 +76,47 @@
         th { color: #38bdf8; padding: 12px; border-bottom: 2px solid #334155; text-align: left; }
         td { padding: 10px; border-bottom: 1px solid #334155; font-size: 0.85rem; }
         
-        @media (max-width: 768px) { .grid-container { grid-template-columns: repeat(2, 1fr); } .controls-container { flex-direction: column; align-items: flex-start; } }
+        @media (max-width: 768px) { .grid-container { grid-template-columns: repeat(2, 1fr); } }
+        
+        .loaded #loader-wrapper { opacity: 0; visibility: hidden; }
     </style>
 </head>
 <body>
+
+    <div id="loader-wrapper">
+        <svg class="canvas" viewBox="0 0 500 700" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="lushGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" style="stop-color:#051937;" /><stop offset="25%" style="stop-color:#004d7a;" />
+                    <stop offset="50%" style="stop-color:#008793;" /><stop offset="75%" style="stop-color:#00bf72;" />
+                    <stop offset="100%" style="stop-color:#a8eb12;" />
+                </linearGradient>
+            </defs>
+            <circle class="drop d1" cx="250" cy="80" r="4" /><circle class="drop d2" cx="230" cy="110" r="3" />
+            <path class="leaf-shape" d="M250,120 C330,120 400,240 250,450 C100,240 170,120 250,120 Z" />
+            <g class="leaf-texture">
+                <path class="leaf-vein" d="M250,180 Q200,190 175,160" /><path class="leaf-vein" d="M250,240 Q190,260 160,220" />
+                <path class="leaf-vein" d="M250,310 Q190,340 165,300" /><path class="leaf-vein" d="M250,180 Q300,190 325,160" />
+                <path class="leaf-vein" d="M250,240 Q310,260 340,220" /><path class="leaf-vein" d="M250,310 Q310,340 335,300" />
+            </g>
+            <path d="M250,120 L250,450" stroke="rgba(0,0,0,0.2)" stroke-width="2" fill="none" />
+            <g>
+                <path class="line-flow c-blue" d="M230,400 L180,330 L180,250 L150,220" /><circle class="node-point" cx="150" cy="220" r="5" fill="#00f2ff" />
+                <path class="line-flow c-blue" d="M210,350 L160,280 L160,190" /><circle class="node-point" cx="160" cy="190" r="4" fill="#00f2ff" />
+            </g>
+            <g>
+                <path class="line-flow c-orange" d="M270,400 L320,330 L320,270 L290,230" /><circle class="node-point" cx="290" cy="230" r="5" fill="#ff9d00" />
+            </g>
+            <g>
+                <path class="line-flow c-green" d="M250,460 L250,500 L100,500 L70,540" /><path class="line-flow c-green" d="M250,460 L250,500 L400,500 L430,540" />
+                <circle class="node-point" cx="70" cy="540" r="6" fill="#39ff14" /><circle class="node-point" cx="430" cy="540" r="6" fill="#39ff14" />
+            </g>
+            <g transform="translate(250, 620)">
+                <text text-anchor="middle" class="text-main">MONITORING PUPUK</text>
+                <text y="40" text-anchor="middle" class="text-sub">IOT SYSTEM</text>
+            </g>
+        </svg>
+    </div>
 
     <h1>Monitoring Pupuk Otomatis</h1>
     
@@ -47,6 +128,7 @@
     </div>
 
     <div class="panel">
+        <h2 class="panel-title">Statistik (Hari Ini)</h2>
         <div class="controls-container">
             <div class="checklist-group">
                 <label class="check-item" style="color: #f87171;"><input type="checkbox" checked onchange="toggleDataset(0, this)"> Pump 1</label>
@@ -60,15 +142,15 @@
     </div>
 
     <div class="panel">
-        <h2 style="color: #4ade80; font-size: 1.1rem; margin-top: 0;">History Log Data (Hari Ini)</h2>
+        <h2 class="panel-title">History Log Data (Hari Ini)</h2>
         <table>
             <thead>
                 <tr>
                     <th>Waktu</th>
-                    <th>Pump 1 (mL)</th>
-                    <th>Pump 2 (mL)</th>
-                    <th>Pump 3 (mL)</th>
-                    <th>Pump 4 (mL)</th>
+                    <th>P1 (mL)</th>
+                    <th>P2 (mL)</th>
+                    <th>P3 (mL)</th>
+                    <th>P4 (mL)</th>
                 </tr>
             </thead>
             <tbody id="log-table-body"></tbody>
@@ -77,12 +159,15 @@
     </div>
 
     <script>
+        // DURASI LOADING 2 DETIK
+        window.addEventListener('load', function() { 
+            setTimeout(function() { document.body.classList.add('loaded'); }, 2000); 
+        });
+
         const channelID = '3221606';
         const readKey = 'TG905M2GZV7OLYYO';
         let pumpChart;
         let lastTimestamp = "";
-
-        // Data Kalibrasi berdasarkan Sketch Arduino: detik per 100mL
         const calibrationData = [81.0, 81.0, 79.0, 80.0]; 
         let countdownIntervals = [null, null, null, null];
         let currentDisplayValues = [0, 0, 0, 0];
@@ -94,15 +179,14 @@
                 data: {
                     labels: [],
                     datasets: [
-                        { label: 'Pump 1', borderColor: '#f87171', data: [], tension: 0.3, spanGaps: true, hidden: false },
-                        { label: 'Pump 2', borderColor: '#4ade80', data: [], tension: 0.3, spanGaps: true, hidden: false },
-                        { label: 'Pump 3', borderColor: '#60a5fa', data: [], tension: 0.3, spanGaps: true, hidden: false },
-                        { label: 'Pump 4', borderColor: '#fb923c', data: [], tension: 0.3, spanGaps: true, hidden: false }
+                        { label: 'P1', borderColor: '#f87171', data: [], tension: 0.3, spanGaps: true },
+                        { label: 'P2', borderColor: '#4ade80', data: [], tension: 0.3, spanGaps: true },
+                        { label: 'P3', borderColor: '#60a5fa', data: [], tension: 0.3, spanGaps: true },
+                        { label: 'P4', borderColor: '#fb923c', data: [], tension: 0.3, spanGaps: true }
                     ]
                 },
                 options: { 
-                    responsive: true, 
-                    plugins: { legend: { display: false } },
+                    responsive: true, plugins: { legend: { display: false } },
                     scales: {
                         x: { ticks: { color: '#64748b' }, grid: { display: false } },
                         y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } }
@@ -111,10 +195,7 @@
             });
         }
 
-        function toggleDataset(index, checkbox) {
-            pumpChart.setDatasetVisibility(index, checkbox.checked);
-            pumpChart.update();
-        }
+        function toggleDataset(index, checkbox) { pumpChart.setDatasetVisibility(index, checkbox.checked); pumpChart.update(); }
 
         async function fetchData() {
             try {
@@ -128,16 +209,11 @@
             if (!feeds || feeds.length === 0) return;
             const todayStr = new Date().toLocaleDateString('en-CA');
             const todayFeeds = feeds.filter(f => f.created_at.startsWith(todayStr));
-
             if (todayFeeds.length === 0) return;
-
             const lastEntry = todayFeeds[todayFeeds.length - 1];
 
-            // --- LOGIKA COUNTDOWN DENGAN KOMPENSASI LATENSI ---
             if (lastEntry.created_at !== lastTimestamp) {
                 lastTimestamp = lastEntry.created_at;
-
-                // Hitung selisih waktu antara server (ThingSpeak) dan client (Web)
                 const serverTime = new Date(lastEntry.created_at).getTime();
                 const clientTime = new Date().getTime();
                 const latencyMs = Math.max(0, clientTime - serverTime);
@@ -146,32 +222,22 @@
                     const targetVal = Math.round(lastEntry[`field${i+1}`] || 0);
                     const display = document.getElementById(`val${i+1}`);
                     const msPerMl = (calibrationData[i] * 1000) / 100;
-
                     clearInterval(countdownIntervals[i]);
 
                     if (targetVal > 0) {
-                        // Menyesuaikan angka awal berdasarkan waktu yang sudah lewat selama pengiriman data
                         const volumeLoss = Math.floor(latencyMs / msPerMl);
                         currentDisplayValues[i] = Math.max(0, targetVal - volumeLoss);
-                        
                         display.innerText = currentDisplayValues[i] + " mL";
-
                         countdownIntervals[i] = setInterval(() => {
                             if (currentDisplayValues[i] > 0) {
                                 currentDisplayValues[i] -= 1;
                                 display.innerText = currentDisplayValues[i] + " mL";
-                            } else {
-                                display.innerText = "0 mL";
-                                clearInterval(countdownIntervals[i]);
-                            }
+                            } else { display.innerText = "0 mL"; clearInterval(countdownIntervals[i]); }
                         }, msPerMl);
-                    } else {
-                        display.innerText = "0 mL";
-                    }
+                    } else { display.innerText = "0 mL"; }
                 }
             }
 
-            // --- TAMPILAN GRAFIK & TABEL (TIDAK BERUBAH) ---
             pumpChart.data.labels = todayFeeds.map(f => new Date(f.created_at).toLocaleTimeString('id-ID', {hour: '2-digit', minute:'2-digit'}));
             for(let i=0; i<4; i++) { pumpChart.data.datasets[i].data = todayFeeds.map(f => f[`field${i+1}`]); }
             pumpChart.update('none');
@@ -213,10 +279,7 @@
             } catch (e) { btn.innerText = "📊 Download Rekapan Excel"; }
         }
 
-        initChart();
-        fetchData();
-        setInterval(fetchData, 15000); // Sinkronisasi cloud setiap 15 detik
+        initChart(); fetchData(); setInterval(fetchData, 15000);
     </script>
 </body>
 </html>
-
